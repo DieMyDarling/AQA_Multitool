@@ -1,7 +1,7 @@
 from selene.api import *
 
 from model.user import user_for_main
-from pages.base_page import BasePage
+from tools.web.pages.base_page import BasePage
 
 
 class LoginPage(BasePage):
