@@ -1,0 +1,142 @@
+stages:
+  - build  # Этап сборки
+  - staging  # Этап тестирования и развертывания
+
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"  # Переменная для кэша PIP
+  FUNCTIONAL:
+    description: "Выберите функционал для тестирования"  # Переменная для маркера
+    value: ""
+    options:
+      - "prod"
+      - "qa_dev"
+      - "regression"
+      - ""
+  TEST_ENV:
+    description: "Возможно указание енва для запуска тестов"  # Переменная для окружения
+  STREAMS:
+    description: "Количество потоков для запуска тестов"
+
+default:
+  image:
+    name: ${CI_REGISTRY_IMAGE}:${CI_COMMIT_REF_NAME}  # Основной образ Docker
+    pull_policy: always  # Всегда забирать образ при необходимости
+  tags:
+    #- selenium-hub  # Теги для образа
+    - selenium-hub
+
+### ==================================================================
+### Сборка test образов
+### ==================================================================
+
+build:
+  image:
+    name: gcr.io/kaniko-project/executor:debug  # Используем образ Kaniko для сборки
+    entrypoint: [""]  # Пустая точка входа
+  stage: build  # Этап сборки
+  before_script:
+    - mkdir -p /kaniko/.docker  # Создать директорию для Docker-конфигурации
+    - echo "{\"auths\":{\"${CI_REGISTRY}\":{\"auth\":\"$(printf "%s:%s" "${CI_REGISTRY_USER}" "${CI_REGISTRY_PASSWORD}" | base64 | tr -d '\n')\"}}}" > /kaniko/.docker/config.json  # Сгенерировать Docker-конфигурацию
+  script:
+    - /kaniko/executor
+      --context "${CI_PROJECT_DIR}"
+      --dockerfile "${CI_PROJECT_DIR}/docker/Dockerfile"
+      --destination "${CI_REGISTRY_IMAGE}:${CI_COMMIT_REF_NAME}"
+      --cache  # Использовать кэш для ускорения сборки
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push"
+      changes:
+        - docker/Dockerfile
+        - requirements.txt
+  tags:
+    - kube
+
+### ==================================================================
+###   Запуск тестов
+### ==================================================================
+
+run_full:
+  stage: staging  # Этап тестирования
+  script:
+    - python3 -m pytest -s -v --testit --testrunid=${TEST_RUN_ID} --testit_url=${URL} --privatetoken=${PRIVATE_TOKEN} --configurationid="2acfe3b8-7a22-4415-bab7-0c78c29d7ee1"
+  only:
+    variables:
+      - $URL != null  # Выполнять только, если переменная URL не равна null
+  variables:
+    TZ: "Europe/Moscow"  # Установить временную зону
+  artifacts:
+    when: always
+    expose_as: 'tests'
+    paths:
+      - 'report.xml'
+      - 'log.txt'
+    reports:
+      junit:
+        - report.xml
+
+test_full:
+  stage: staging  # Этап тестирования
+  script:
+    - |-
+      if [ ! -z "$FUNCTIONAL" ]; then
+              MARKER_KEY="-m $FUNCTIONAL"
+      fi
+      if [ ! -z "$TEST_ENV" ]; then
+              TEST_ENV_KEY="--env $TEST_ENV"
+      fi
+      if [ ! -z "$STREAMS" ]; then
+              STREAMS_KEY="-n $STREAMS"
+      fi
+      echo -e "START TESTING WITH:\npython3 -m pytest -s -v $STREAMS_KEY $TEST_ENV_KEY $MARKER_KEY"
+      echo "==================================================================="
+      python3 -m pytest -s -v --junit-xml=report.xml -o junit_family=xunit1 $STREAMS_KEY $TEST_ENV_KEY $MARKER_KEY
+  variables:
+    TZ: "Europe/Moscow"  # Установить временную зону
+  artifacts:
+    when: always
+    expose_as: 'tests'
+    paths:
+      - 'report.xml'
+      - 'log.txt'
+    reports:
+      junit:
+        - report.xml
+
+merge_test_full:
+  stage: staging  # Этап тестирования
+  only:
+    variables:
+      - $PROJECT_FROM != null  # Выполнять только, если переменная PROJECT_FROM не равна null
+  script:
+    - python3 -m pytest -s -v --junit-xml=report.xml -o junit_family=xunit1
+    - echo Test run for $PROJECT_FROM
+  variables:
+    TZ: "Europe/Moscow"  # Установить временную зону
+  artifacts:
+    when: always
+    expose_as: 'tests'
+    paths:
+      - 'report.xml'
+      - 'log.txt'
+    reports:
+      junit:
+        - report.xml
+
+sheduled_test:
+  stage: staging  # Этап тестирования
+  script:
+    - ./crontest.sh
+  only:
+    - schedules  # Выполнять только по расписанию
+  variables:
+    TZ: "Europe/Moscow"  # Установить временную зону
+
+merge_test:
+  stage: staging  # Этап тестирования
+  script:
+    - ./crontest.sh
+  only:
+    variables:
+      - $COMMIT_MESSAGE != null  # Выполнять только, если переменная COMMIT_MESSAGE не равна null
+  variables:
+    TZ: "Europe/Moscow"  # Установить временную зону
