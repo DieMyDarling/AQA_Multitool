@@ -1,6 +1,7 @@
 import json
 import logging
 import requests
+import allure
 
 from environments import env
 
@@ -13,18 +14,12 @@ class APIClient:
 
         Args:
             api_url (str): URL API.
-            api_url (str): Ключ API.
+            api_key (str): Ключ API.
         """
-        # self.api_url = None
-        # self.api_key = None
-        # self.bearer = None
         self.api_url = api_url
         self.api_key = api_key
         self.bearer = bearer
         self.headers = {'Content-Type': 'application/json'}
-
-        # assert api_url is None, "Не указан URL API"
-        # assert api_url is None, "Не указан ключ API"
 
         if self.api_key is not None:
             self.headers['x-app-key'] = self.api_key
@@ -48,15 +43,15 @@ class APIClient:
         url = self.api_url + endpoint
         headers = self.headers
 
-        try:
-            response = self.session.get(url, params=params, headers=headers)
-            response.raise_for_status()  # Вызывает исключение для статусных кодов 4xx и 5xx
-        except requests.exceptions.RequestException as e:
-            logging.error(f"Ошибка при выполнении GET-запроса: {e}")
-            # return None
-        # response = requests.get(url, params=params, headers=headers)
-
-        return response
+        with allure.step(f"Выполнение GET-запроса. URL: {url}"):
+            try:
+                response = self.session.get(url, params=params, headers=headers)
+                response.raise_for_status()  # Вызывает исключение для статусных кодов 4xx и 5xx
+                return response
+            except requests.exceptions.RequestException as e:
+                logging.error(f"Ошибка при выполнении GET-запроса: {e}")
+                allure.attach(str(e), name="Ошибка GET-запроса", attachment_type=allure.attachment_type.TEXT)
+                return None
 
     def post(self, endpoint='', data=None):
         """
@@ -72,13 +67,15 @@ class APIClient:
         url = self.api_url + endpoint
         headers = self.headers
 
-        try:
-            response = self.session.post(url, json=data, headers=headers)
-            # response.raise_for_status()  # Вызывает исключение для статусных кодов 4xx и 5xx
-        except requests.exceptions.RequestException as e:
-            logging.error(f"Ошибка при выполнении POST-запроса: {e}")
-
-        return response
+        with allure.step(f"Выполнение POST-запроса. URL: {url}"):
+            try:
+                response = self.session.post(url, json=data, headers=headers)
+                response.raise_for_status()  # Вызывает исключение для статусных кодов 4xx и 5xx
+                return response
+            except requests.exceptions.RequestException as e:
+                logging.error(f"Ошибка при выполнении POST-запроса: {e}")
+                allure.attach(str(e), name="Ошибка POST-запроса", attachment_type=allure.attachment_type.TEXT)
+                return None
 
     def put(self, url=None, data=None, cookies=None):
         """
@@ -98,8 +95,9 @@ class APIClient:
         if url is None:
             url = self.api_url
 
-        response = self._send(url, data, headers, cookies, 'PUT')
-        return response
+        with allure.step(f"Выполнение PUT-запроса. URL: {url}"):
+            response = self._send(url, data, headers, cookies, 'PUT')
+            return response
 
     def patch(self, endpoint='', data=None):
         """
@@ -115,14 +113,15 @@ class APIClient:
         url = self.api_url + endpoint
         headers = self.headers
 
-        try:
-            response = self.session.patch(url, json=data, headers=headers)
-            response.raise_for_status()  # Вызывает исключение для статусных кодов 4xx и 5xx
-        except requests.exceptions.RequestException as e:
-            logging.error(f"Ошибка при выполнении PATCH-запроса: {e}")
-            # return None
-
-        return response
+        with allure.step(f"Выполнение PATCH-запроса. URL: {url}"):
+            try:
+                response = self.session.patch(url, json=data, headers=headers)
+                response.raise_for_status()  # Вызывает исключение для статусных кодов 4xx и 5xx
+                return response
+            except requests.exceptions.RequestException as e:
+                logging.error(f"Ошибка при выполнении PATCH-запроса: {e}")
+                allure.attach(str(e), name="Ошибка PATCH-запроса", attachment_type=allure.attachment_type.TEXT)
+                return None
 
     def _send(self, url, data, headers, cookies, method, params=None):
         """
@@ -152,23 +151,24 @@ class APIClient:
         if not cookies:
             cookies = {}
 
-        try:
-            if method == 'GET':
-                response = requests.get(url, params=params, headers=headers, cookies=cookies)
-            elif method == 'POST':
-                response = requests.post(url, json=data, headers=headers, cookies=cookies)
-            elif method == 'PUT':
-                response = requests.put(url, data=json.dumps(data), headers=headers, cookies=cookies)
-            elif method == 'PATCH':
-                response = requests.patch(url, json=data, headers=headers, cookies=cookies)
-            else:
-                raise Exception(f'Недопустимый метод HTTP: "{method}"')
-        except requests.exceptions.RequestException as e:
-            # Обработка ошибок при выполнении запроса
-            print(f"Ошибка при выполнении запроса: {e}")
-            # return None
-
-        return response
+        with allure.step(f"Отправка {method}-запроса. URL: {url}"):
+            try:
+                if method == 'GET':
+                    response = requests.get(url, params=params, headers=headers, cookies=cookies)
+                elif method == 'POST':
+                    response = requests.post(url, json=data, headers=headers, cookies=cookies)
+                elif method == 'PUT':
+                    response = requests.put(url, data=json.dumps(data), headers=headers, cookies=cookies)
+                elif method == 'PATCH':
+                    response = requests.patch(url, json=data, headers=headers, cookies=cookies)
+                else:
+                    raise Exception(f'Недопустимый метод HTTP: "{method}"')
+                response.raise_for_status()
+                return response
+            except requests.exceptions.RequestException as e:
+                logging.error(f"Ошибка при выполнении запроса: {e}")
+                allure.attach(str(e), name=f"Ошибка {method}-запроса", attachment_type=allure.attachment_type.TEXT)
+                return None
 
     def get_cookie(self, response, cookie_name):
         """
@@ -184,8 +184,9 @@ class APIClient:
         Raises:
             AssertionError: Если указанная куки не найдена в ответе.
         """
-        assert cookie_name in response.cookies, f"Не удается найти куки с именем {cookie_name} в последнем ответе"
-        return response.cookies[cookie_name]
+        with allure.step(f"Получение значения куки: {cookie_name}"):
+            assert cookie_name in response.cookies, f"Не удается найти куки с именем {cookie_name} в последнем ответе"
+            return response.cookies[cookie_name]
 
     def get_header(self, response, header_name):
         """
@@ -201,8 +202,9 @@ class APIClient:
         Raises:
             AssertionError: Если указанный заголовок не найден в ответе.
         """
-        assert header_name in response.headers, f"Не удается найти заголовок с именем {header_name} в последнем ответе"
-        return response.headers[header_name]
+        with allure.step(f"Получение значения заголовка: {header_name}"):
+            assert header_name in response.headers, f"Не удается найти заголовок с именем {header_name} в последнем ответе"
+            return response.headers[header_name]
 
     def get_json_value(self, response, key):
         """
@@ -218,15 +220,15 @@ class APIClient:
         Raises:
             AssertionError: Если ответ не является JSON или не содержит указанного ключа.
         """
-        try:
-            response_dict = response.json()
-        except json.decoder.JSONDecodeError:
-            assert False, f"Ответ не в формате JSON. Текст ответа: '{response.text}'"
+        with allure.step(f"Получение значения из JSON-ответа по ключу: {key}"):
+            try:
+                response_dict = response.json()
+            except json.decoder.JSONDecodeError:
+                assert False, f"Ответ не в формате JSON. Текст ответа: '{response.text}'"
 
-        assert key in response_dict, f"JSON ответа не содержит ключа '{key}'"
+            assert key in response_dict, f"JSON ответа не содержит ключа '{key}'"
 
-        return response_dict[key]
-
+            return response_dict[key]
 
 
 """
@@ -234,9 +236,8 @@ class APIClient:
 api_url = 'https://api.example.com'
 api_key = 'your-api-key'
 
-
 # Создание экземпляра клиента
-client = APIClient(api_url=api_url, api_key=api_key, auth_type=auth_type)
+client = APIClient(api_url=api_url, api_key=api_key)
 
 # Подготовка данных для POST-запроса
 payload = {
@@ -255,5 +256,4 @@ if response is not None:
         print(f'Ошибка при отправке сообщения. Код статуса: {response.status_code}')
 else:
     print('Ошибка при выполнении POST-запроса.')
-
 """
