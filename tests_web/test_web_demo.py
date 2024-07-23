@@ -1,7 +1,7 @@
 import allure
 import pytest
 
-import web
+from tools.web import web
 
 
 @pytest.mark.regression
@@ -11,6 +11,6 @@ import web
 @allure.testcase('', '')
 @allure.link('', '')
 @allure.issue('', '')
-def test_basic():
+def test_web_demo():
 
     web.login_page.authorization()

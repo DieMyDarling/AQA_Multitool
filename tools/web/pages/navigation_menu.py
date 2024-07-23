@@ -1,6 +1,6 @@
 from selene.api import *
 
-from pages.base_page import BasePage
+from tools.web.pages.base_page import BasePage
 
 
 class NavigationMenu(BasePage):
