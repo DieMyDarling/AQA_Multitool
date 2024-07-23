@@ -1,7 +1,9 @@
 import json
 import logging
-import requests
+
+import aiohttp
 import allure
+import requests
 
 from environments import env
 
@@ -15,6 +17,7 @@ class APIClient:
         Args:
             api_url (str): URL API.
             api_key (str): Ключ API.
+            bearer (str): Токен для авторизации.
         """
         self.api_url = api_url
         self.api_key = api_key
@@ -231,8 +234,46 @@ class APIClient:
             return response_dict[key]
 
 
+class APIClientAsync:
+
+    def __init__(self, api_url=env.api_portal_url, api_key=env.api_key, bearer=None):
+        """
+        Инициализация асинхронного клиента API.
+
+        Args:
+            api_url (str): URL API.
+            api_key (str): Ключ API.
+            bearer (str): Токен для авторизации.
+        """
+        self.api_url = api_url
+        self.api_key = api_key
+        self.bearer = bearer
+        self.headers = {'Content-Type': 'application/json'}
+
+        if self.api_key is not None:
+            self.headers['x-app-key'] = self.api_key
+        if self.bearer is not None:
+            self.headers['Authorization'] = f'Bearer {self.bearer}'
+
+    async def _request(self, method, endpoint, data=None):
+        url = self.api_url + endpoint
+        async with aiohttp.ClientSession() as session:
+            async with session.request(method, url, json=data, headers=self.headers) as response:
+                response_data = await response.json()
+                return response, response_data
+
+    async def get(self, endpoint=''):
+        return await self._request('GET', endpoint)
+
+    async def post(self, endpoint='', data=None):
+        return await self._request('POST', endpoint, data)
+
+    async def delete(self, endpoint=''):
+        return await self._request('DELETE', endpoint)
+
+
 """
-# Пример использования:
+# Пример использования синхронного клиента:
 api_url = 'https://api.example.com'
 api_key = 'your-api-key'
 
@@ -256,4 +297,25 @@ if response is not None:
         print(f'Ошибка при отправке сообщения. Код статуса: {response.status_code}')
 else:
     print('Ошибка при выполнении POST-запроса.')
+
+
+# Пример использования асинхронного клиента:
+async def main():
+    api_url = 'https://api.example.com'
+    api_key = 'your-api-key'
+
+    client = APIClientAsync(api_url=api_url, api_key=api_key)
+
+    payload = {
+        'name': 'John Doe',
+        'email': 'johndoe@example.com',
+        'message': 'Hello, world!'
+    }
+
+    response, response_data = await client.post(endpoint='/messages', data=payload)
+
+    if response.status == 201:
+        print('Сообщение успешно отправлено!')
+    else:
+        print(f'Ошибка при отправке сообщения. Код статуса: {response.status}')
 """

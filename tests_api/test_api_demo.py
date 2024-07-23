@@ -1,84 +1,125 @@
-import allure
+from http import HTTPStatus
 
-from tools.api.client import APIClient
+import allure
+import pytest
+
+from tools.api.services.user_steps import user_steps, UserSteps
 
 
 @allure.feature('API Tests')
 @allure.story('Create and Retrieve User')
-def test_create_and_retrieve_user():
-    api_url = 'https://api.example.com'
-    api_key = 'your-api-key'
+@pytest.mark.asyncio
+async def test_create_and_retrieve_user():
+    """
+    Тест-кейс: Создание и получение пользователя
 
-    client = APIClient(api_url=api_url, api_key=api_key)
+    Шаги:
+    1. Создать нового пользователя с именем 'John Doe' и email 'johndoe@example.com'.
+    2. Получить список пользователей.
+    3. Проверить, что созданный пользователь присутствует в списке пользователей.
 
+    Ожидаемый результат:
+    - Новый пользователь должен быть успешно создан.
+    - Новый пользователь должен быть найден в списке пользователей.
+    """
     new_user = {
         'name': 'John Doe',
         'email': 'johndoe@example.com'
     }
 
-    with allure.step("Создание нового пользователя"):
-        create_response = client.post(endpoint='/users', data=new_user)
-        assert create_response is not None, 'Ответ на POST-запрос пустой'
-        assert create_response.status_code == 201, f'Не удалось создать пользователя. Код статуса: {create_response.status_code}'
-        user_id = create_response.json().get('id')
+    created_user = await user_steps.create_user(new_user)
+    user_id = created_user.get('id')
 
-    with allure.step("Получение списка пользователей"):
-        get_response = client.get(endpoint='/users')
-        assert get_response is not None, 'Ответ на GET-запрос пустой'
-        assert get_response.status_code == 200, f'Не удалось получить список пользователей. Код статуса: {get_response.status_code}'
+    users = await user_steps.get_users()
+    user_emails = [user['email'] for user in users]
+    assert new_user['email'] in user_emails, 'Новый пользователь не найден в списке пользователей'
 
-    with allure.step("Проверка, что новый пользователь в списке пользователей"):
-        users = get_response.json()
-        user_emails = [user['email'] for user in users]
-        assert new_user['email'] in user_emails, 'Новый пользователь не найден в списке пользователей'
+
+@allure.feature('API Tests')
+@allure.story('Create and Delete User')
+@pytest.mark.asyncio
+async def test_create_and_delete_user():
+    """
+    Тест-кейс: Создание и удаление пользователя
+
+    Шаги:
+    1. Создать нового пользователя с именем 'Jane Smith' и email 'janesmith@example.com'.
+    2. Удалить созданного пользователя.
+    3. Проверить, что пользователь был успешно удален.
+
+    Ожидаемый результат:
+    - Новый пользователь должен быть успешно создан.
+    - Новый пользователь должен быть успешно удален.
+    - Попытка получения удаленного пользователя должна вернуть ответ о том, что пользователь не найден.
+    """
+    new_user = {
+        'name': 'Jane Smith',
+        'email': 'janesmith@example.com'
+    }
+
+    created_user = await user_steps.create_user(new_user)
+    user_id = created_user.get('id')
+
+    await user_steps.delete_user(user_id)
+
+    response = await user_steps.get_user_by_id(user_id)
+    assert response is None, 'Пользователь не был удален'
 
 
 @allure.feature('API Tests')
 @allure.story('Negative Tests')
-def test_create_user_without_required_fields():
-    api_url = 'https://api.example.com'
-    api_key = 'your-api-key'
+@pytest.mark.asyncio
+async def test_create_user_without_required_fields():
+    """
+    Тест-кейс: Попытка создания пользователя без обязательного поля email
 
-    client = APIClient(api_url=api_url, api_key=api_key)
+    Шаги:
+    1. Попытаться создать пользователя с именем 'John Doe' без указания email.
 
+    Ожидаемый результат:
+    - Запрос на создание пользователя должен завершиться ошибкой с кодом 400 (Bad Request).
+    """
     incomplete_user = {
         'name': 'John Doe'
     }
 
-    with allure.step("Попытка создать пользователя без обязательного поля email"):
-        create_response = client.post(endpoint='/users', data=incomplete_user)
-        assert create_response is not None, 'Ответ на POST-запрос пустой'
-        assert create_response.status_code == 400, f'Ожидался статус 400, но получен {create_response.status_code}'
+    await user_steps.create_user_expect_failure(incomplete_user, HTTPStatus.BAD_REQUEST)
 
 
 @allure.feature('API Tests')
 @allure.story('Negative Tests')
-def test_create_user_with_existing_email():
-    api_url = 'https://api.example.com'
-    api_key = 'your-api-key'
+@pytest.mark.asyncio
+async def test_create_user_with_existing_email():
+    """
+    Тест-кейс: Попытка создания пользователя с уже существующим email
 
-    client = APIClient(api_url=api_url, api_key=api_key)
+    Шаги:
+    1. Попытаться создать пользователя с именем 'Jane Doe' и email 'johndoe@example.com', который уже существует.
 
+    Ожидаемый результат:
+    - Запрос на создание пользователя должен завершиться ошибкой с кодом 409 (Conflict).
+    """
     existing_user = {
         'name': 'Jane Doe',
         'email': 'johndoe@example.com'  # Используем email, который уже существует
     }
 
-    with allure.step("Попытка создать пользователя с уже существующим email"):
-        create_response = client.post(endpoint='/users', data=existing_user)
-        assert create_response is not None, 'Ответ на POST-запрос пустой'
-        assert create_response.status_code == 409, f'Ожидался статус 409, но получен {create_response.status_code}'
+    await user_steps.create_user_expect_failure(existing_user, HTTPStatus.CONFLICT)
 
 
 @allure.feature('API Tests')
 @allure.story('Negative Tests')
-def test_get_users_with_invalid_api_key():
-    api_url = 'https://api.example.com'
-    invalid_api_key = 'invalid-api-key'
+@pytest.mark.asyncio
+async def test_get_users_with_invalid_api_key():
+    """
+    Тест-кейс: Попытка получения списка пользователей с неверным API ключом
 
-    client = APIClient(api_url=api_url, api_key=invalid_api_key)
+    Шаги:
+    1. Использовать неверный API ключ для получения списка пользователей.
 
-    with allure.step("Попытка получить список пользователей с неверным API ключом"):
-        get_response = client.get(endpoint='/users')
-        assert get_response is not None, 'Ответ на GET-запрос пустой'
-        assert get_response.status_code == 403, f'Ожидался статус 403, но получен {get_response.status_code}'
+    Ожидаемый результат:
+    - Запрос на получение списка пользователей должен завершиться ошибкой с кодом 403 (Forbidden).
+    """
+    invalid_user_steps = UserSteps(api_url='https://api.example.com', api_key='invalid-api-key')
+
+    await invalid_user_steps.get_users_expect_failure()
