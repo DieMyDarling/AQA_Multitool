@@ -5,6 +5,7 @@ from tools.visual.screenshots_processing import image_comparer
 
 basic_urls = ['/']
 
+
 @allure.severity(allure.severity_level.NORMAL)
 @allure.title('Basic scenario')
 @allure.description('Basic scenario')
