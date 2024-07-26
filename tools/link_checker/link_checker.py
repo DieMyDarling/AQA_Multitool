@@ -276,5 +276,3 @@ link_checker_old = LinkCheckerOld()
 link_checker_sync = LinkCheckerSync()
 link_checker_async = LinkCheckerAsync()
 
-# todo: добавить класс, который будет выбирать нужный чекер по флагу
-# todo: раскидать всё это по отдульным модулям
