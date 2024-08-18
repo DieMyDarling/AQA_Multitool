@@ -2,6 +2,8 @@ import time
 
 from allure import step
 from selene.api import *
+from selenium import webdriver
+from selenium.webdriver import Keys
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
 
@@ -13,7 +15,7 @@ class BasePage:
     @staticmethod
     def click_on(element, name: str):
         """
-        Метод для перехода к указанному элементу, если он кликабельный.
+        Метод клика по указанному элементу, если он кликабельный.
 
         :param element: Элемент или локатор (строка), который нужно кликнуть.
                         Если передан объект элемента (selene.api.browser_element), он будет использован напрямую.
@@ -35,9 +37,9 @@ class BasePage:
     @staticmethod
     def double_click_on(element, name: str):
         """
-        Метод для перехода к указанному элементу, если он кликабельный.
+        Метод для двойного клика на указанный элемент, если он кликабельный.
 
-        :param element: Элемент или локатор (строка), который нужно кликнуть.
+        :param element: Элемент или локатор (строка), который нужно дважды кликнуть.
                         Если передан объект элемента (selene.api.browser_element), он будет использован напрямую.
                         Если передана строка, то она интерпретируется как локатор для поиска элемента через browser.element().
         :type element: str or selene.api.browser_element
@@ -46,7 +48,7 @@ class BasePage:
 
         :raises Exception: Если произошла ошибка при переходе, метод вызывает исключение с информацией об ошибке.
         """
-        with step(f'Кликнуть на "{name}"'):
+        with step(f'Кликнуть дважды на "{name}"'):
             try:
                 if isinstance(element, str):
                     element = browser.element(element)
@@ -126,7 +128,10 @@ class BasePage:
         :raises AssertionError: Если элемент не найден или не виден на странице.
 
         Пример использования:
-        check_element_is_visible('button.submit', 'Кнопка отправки формы')
+
+        .. code-block:: python
+
+            check_element_is_visible('button.submit', 'Кнопка отправки формы')
         """
         with step(f'Проверить что элемент "{name}" отображается'):
             try:
@@ -148,7 +153,7 @@ class BasePage:
                         Если передана строка, то она интерпретируется как локатор для поиска элемента через browser.element().
         :type element: str or selene.api.browser_element
         :param text: Текст, который нужно ввести в поле. Если не указан, будет сгенерирован случайный текст.
-        :param name: Имя поля ввода. Может быть пустым
+        :param name: Имя поля ввода. Может быть пустым.
         :type text: str or None
 
         :raises Exception: Если произошла ошибка при вводе текста, метод вызывает исключение с информацией об ошибке.
@@ -175,12 +180,12 @@ class BasePage:
         """
         Проверяет, что элемент не отображается на странице.
 
-        Аргументы:
-        - element: Элемент, который нужно проверить на отображение. Может быть передан как строка (локатор) или объект PageObject.
-        - name: Название элемента для отображения в сообщениях об ошибках.
+        :param element: Элемент, который нужно проверить на отображение. Может быть передан как строка (локатор) или объект PageObject.
+        :type element: str or WebElement
+        :param name: Название элемента для отображения в сообщениях об ошибках.
+        :type name: str
 
-        Исключения:
-        - AssertionError: Если элемент виден на странице.
+        :raises AssertionError: Если элемент виден на странице.
         """
         with step(f'Проверить что элемент "{name}" не отображается'):
             try:
@@ -195,16 +200,24 @@ class BasePage:
         """
         Проверяет видимость элементов с заданным текстом.
 
-        Args:
-            text (str or list): Текст элемента или список текстов элементов для проверки.
-        Raises:
-            AssertionError: Если элемент не найден или не видим.
-        Examples:
-            # Проверка видимости элемента с текстом 'Привет'
-            check_text_is_visible('Привет')
+        :param text: Текст элемента или список текстов элементов для проверки.
+        :type text: str or list
 
-            # Проверка видимости нескольких элементов по списку текстов
-            check_text_is_visible(['Привет', 'Мир'])
+        :raises AssertionError: Если элемент не найден или не виден.
+
+        Примеры использования:
+
+        - Проверка видимости элемента с текстом 'Привет':
+
+          .. code-block:: python
+
+              check_text_is_visible('Привет')
+
+        - Проверка видимости нескольких элементов по списку текстов:
+
+          .. code-block:: python
+
+              check_text_is_visible(['Привет', 'Мир'])
         """
         if isinstance(text, str):
             text = [text]
@@ -221,16 +234,24 @@ class BasePage:
         """
         Проверяет невидимость элементов с заданным текстом.
 
-        Args:
-            text (str or list): Текст элемента или список текстов элементов для проверки.
-        Raises:
-            AssertionError: Если элемент виден на странице.
-        Examples:
-            # Проверка невидимости элемента с текстом 'Привет'
-            check_text_is_not_visible('Привет')
+        :param text: Текст элемента или список текстов элементов для проверки.
+        :type text: str or list
 
-            # Проверка невидимости нескольких элементов по списку текстов
-            check_text_is_not_visible(['Привет', 'Мир'])
+        :raises AssertionError: Если элемент виден на странице.
+
+        Примеры использования:
+
+        - Проверка невидимости элемента с текстом 'Привет':
+
+          .. code-block:: python
+
+              check_text_is_not_visible('Привет')
+
+        - Проверка невидимости нескольких элементов по списку текстов:
+
+          .. code-block:: python
+
+              check_text_is_not_visible(['Привет', 'Мир'])
         """
         if isinstance(text, str):
             text = [text]
@@ -244,6 +265,20 @@ class BasePage:
 
     @staticmethod
     def check_element_contains_text(element, name: str, text: str):
+        """
+        Проверяет, что элемент содержит указанный текст.
+
+        :param element: Элемент или локатор (строка), который нужно проверить.
+                        Если передан объект элемента (selene.api.browser_element), он будет использован напрямую.
+                        Если передана строка, то она интерпретируется как локатор для поиска элемента через browser.element().
+        :type element: str or selene.api.browser_element
+        :param name: Название элемента для отображения в сообщениях об ошибках.
+        :type name: str
+        :param text: Текст, который должен содержаться в элементе.
+        :type text: str
+
+        :raises Exception: Если элемент не содержит указанный текст, метод вызывает исключение с информацией об ошибке.
+        """
         with step(f'Проверить что элемент "{name}" содержит текст "{text}"'):
             try:
                 if isinstance(element, str):
@@ -310,14 +345,17 @@ class BasePage:
 
     @staticmethod
     def move_slider(element, name: str):
-        from selenium import webdriver
-        driver = webdriver.Chrome()
         """
         Передвинуть слайдер.
 
         :param element: Элемент слайдера.
+        :type element: str or WebElement
         :param name: Наименование слайдера.
+        :type name: str
+
+        :raises Exception: Если произошла ошибка при передвижении слайдера, метод вызывает исключение с информацией об ошибке.
         """
+        driver = webdriver.Chrome()
         with step(f'Передвинуть слайдер "{name}"'):
             try:
                 if isinstance(element, str):
@@ -326,3 +364,23 @@ class BasePage:
                 action_chains.click_and_hold(element).move_by_offset(xoffset=200, yoffset=0).release().perform()
             except Exception as e:
                 raise Exception(f'Произошла ошибка при передвижении слайдера "{name}"\n{str(e)}')
+
+    @staticmethod
+    def clear_input_field(element, name: str):
+        """
+        Очищает поле ввода с помощью нажатий CTRL+A и BACKSPACE.
+
+        :param element: Элемент поле ввода.
+        :type element: str or WebElement
+        :param name: Наименование поле ввода.
+        :type name: str
+
+        :raises Exception: Если произошла ошибка при очистке поля, метод вызывает исключение с информацией об ошибке.
+        """
+        with step(f'Очистить поле ввода "{name}"'):
+            try:
+                if isinstance(element, str):
+                    element = browser.element(element)
+                element.should(be.visible).hover().send_keys(Keys.CONTROL + "a").send_keys(Keys.BACKSPACE)
+            except Exception as e:
+                raise Exception(f'Произошла ошибка при очистке поля: "{name}"\n{e!s}')
