@@ -12,5 +12,6 @@ from tools.web import web
 @allure.link('', '')
 @allure.issue('', '')
 def test_web_demo():
-
-    web.login_page.authorization()
+    web.login_page.open_page()
+    web.login_page.fill_auth_form()
+    web.login_page.press_login_button()
