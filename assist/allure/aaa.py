@@ -1,4 +1,4 @@
-from tools.allure import gherkin
+from assist.allure import gherkin
 
 
 def arrange(description: str):

@@ -1,6 +1,6 @@
 import collections
-import re
 import inspect
+import re
 from functools import wraps, reduce
 
 from allure_commons import plugin_manager
@@ -8,7 +8,7 @@ from allure_commons.utils import uuid4, represent
 
 
 def _humanify(string_with_underscores, /):
-    return re.sub(r'_+', ' ', string_with_underscores).strip()                  # todo: improve ;)
+    return re.sub(r'_+', ' ', string_with_underscores).strip()
 
 
 def _fn_params_to_ordered_dict(func, *args, **kwargs):
@@ -28,14 +28,14 @@ def _fn_params_to_ordered_dict(func, *args, **kwargs):
     varargs = args[len(spec.args):]
     varargs_dict = \
         {spec.varargs: varargs} if (spec.varargs and varargs) else \
-        {}
+            {}
     pos_or_named_or_vargs_ordered_names = \
         pos_or_named_ordered_names + [spec.varargs] if varargs_dict else \
-        pos_or_named_ordered_names
+            pos_or_named_ordered_names
 
     pos_or_named_or_vargs_or_named_only_ordered_names = (
-        pos_or_named_or_vargs_ordered_names
-        + list(spec.kwonlyargs)
+            pos_or_named_or_vargs_ordered_names
+            + list(spec.kwonlyargs)
     )
 
     items = {
@@ -62,11 +62,11 @@ def step(
         derepresent_params=False,
         display_context=True,
         translations=(),
-):                                                                              # todo: add prefixes like gherkin, controlled by setting;)
+):
     if callable(title_or_callable):
         func = title_or_callable
         name: str = title_or_callable.__name__
-        display_name = _humanify(name)                                          # todo: move to StepContext
+        display_name = _humanify(name)
         return StepContext(
             display_name,
             {},
@@ -149,6 +149,7 @@ class StepContext:
 
             def derepresent(string):
                 return string[1:-1]
+
             params_string = self.params_separator.join(
                 list(map(derepresent, params)) if self.derepresent_params
                 else params
@@ -172,7 +173,7 @@ class StepContext:
                         + params_string)
 
             def context():
-                # todo: refactor naming and make idiomatic
+
                 def is_method(fn):
                     spec = inspect.getfullargspec(fn)
                     return (args
@@ -181,13 +182,13 @@ class StepContext:
 
                 maybe_module_name = \
                     func.__module__.split('.')[-1] if not is_method(func) \
-                    else None
+                        else None
 
                 instance = args[0] if is_method(func) else None
                 instance_desc = str(instance)
                 maybe_instance_name = \
                     instance_desc if 'at 0x' not in instance_desc \
-                    else None
+                        else None
                 class_name = instance and instance.__class__.__name__
 
                 context_name = maybe_module_name or maybe_instance_name or class_name
@@ -195,15 +196,13 @@ class StepContext:
                 if not context_name:
                     return ''
 
-                return f' [{context_name}]'                                     # todo: make ` [...]` configurable;)
+                return f' [{context_name}]'
 
             name_to_display = (
                     title_to_display()
                     + (params_to_display() if self.display_params else '')
                     + (context() if self.display_context else '')
             )
-
-
 
             translated_name = reduce(
                 lambda text, item: text.replace(item[0], item[1]),
@@ -214,7 +213,6 @@ class StepContext:
             with StepContext(translated_name, params_dict):
                 return func(*args, **kw)
 
-            # todo: consider supporting the following original params rendering
             # with StepContext(self.title.format(*args, **params), params):
             #     return func(*args, **kw)
 

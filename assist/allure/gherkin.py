@@ -1,6 +1,6 @@
 from typing import Optional
 
-from tools.allure import report
+from assist.allure import report
 
 
 def _step(description: Optional[str] = None):
