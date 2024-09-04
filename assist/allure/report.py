@@ -1,11 +1,12 @@
 import collections
-import re
 import inspect
+import re
 from functools import wraps, reduce
-from selene.core.entity import Element
 
 from allure_commons import plugin_manager
 from allure_commons.utils import uuid4, represent
+from selene.core.entity import Element
+
 
 def _humanify(string_with_underscores, /):
     return re.sub(r'_+', ' ', string_with_underscores).strip()
