@@ -9,10 +9,9 @@ class LoginPage(BasePage):
     input_password = browser.element(by.id('password'))
     button_login = browser.element(by.id('login-button'))
 
-    def open_page(self, url: str = None):
-        self.open_page(url='https://www.saucedemo.com/')
+    def open(self, url='https://www.saucedemo.com/'):
+        self.open_page(url=url)
         self.check_browser_title(title='Swag Labs')
-
 
     def fill_auth_form(self, username=None, password=None):
         """

@@ -1,20 +1,18 @@
 import collections
-import inspect
 import re
+import inspect
 from functools import wraps, reduce
+from selene.core.entity import Element
 
 from allure_commons import plugin_manager
 from allure_commons.utils import uuid4, represent
 
-
 def _humanify(string_with_underscores, /):
     return re.sub(r'_+', ' ', string_with_underscores).strip()
-
 
 def _fn_params_to_ordered_dict(func, *args, **kwargs):
     spec = inspect.getfullargspec(func)
 
-    # given pos_or_named = list of pos_only args and pos_or_named/standard args
     pos_or_named_ordered_names = list(spec.args)
     pos_without_defaults_dict = dict(zip(spec.args, args))
     if spec.args and spec.args[0] in ['cls', 'self']:
@@ -22,16 +20,11 @@ def _fn_params_to_ordered_dict(func, *args, **kwargs):
 
     received_args_amount = len(args)
     pos_or_named_not_set = spec.args[received_args_amount:]
-    pos_defaults_dict = \
-        dict(zip(pos_or_named_not_set, spec.defaults or []))
+    pos_defaults_dict = dict(zip(pos_or_named_not_set, spec.defaults or []))
 
     varargs = args[len(spec.args):]
-    varargs_dict = \
-        {spec.varargs: varargs} if (spec.varargs and varargs) else \
-            {}
-    pos_or_named_or_vargs_ordered_names = \
-        pos_or_named_ordered_names + [spec.varargs] if varargs_dict else \
-            pos_or_named_ordered_names
+    varargs_dict = {spec.varargs: varargs} if (spec.varargs and varargs) else {}
+    pos_or_named_or_vargs_ordered_names = pos_or_named_ordered_names + [spec.varargs] if varargs_dict else pos_or_named_ordered_names
 
     pos_or_named_or_vargs_or_named_only_ordered_names = (
             pos_or_named_or_vargs_ordered_names
@@ -48,12 +41,15 @@ def _fn_params_to_ordered_dict(func, *args, **kwargs):
 
     sorted_items = sorted(
         map(lambda kv: (kv[0], represent(kv[1])), items),
-        key=
-        lambda x: pos_or_named_or_vargs_or_named_only_ordered_names.index(x[0])
+        key=lambda x: pos_or_named_or_vargs_or_named_only_ordered_names.index(x[0])
     )
 
     return collections.OrderedDict(sorted_items)
 
+def _format_param(value):
+    if isinstance(value, Element):
+        return f'локатор: {value._locator}'
+    return represent(value)
 
 def step(
         title_or_callable=None,
@@ -87,9 +83,7 @@ def step(
             translations=translations,
         )
 
-
 class StepContext:
-
     def __init__(
             self,
             title,
@@ -131,28 +125,15 @@ class StepContext:
         def impl(*args, **kw):
             __tracebackhide__ = True
 
-            # params_dict = func_parameters(func, *args, **kw)
             params_dict = _fn_params_to_ordered_dict(func, *args, **kw)
 
-            def described(item):
-                (name, value) = item
-                spec = inspect.getfullargspec(func)
-                is_pos_or_named_passed_as_arg = \
-                    name in dict(zip(spec.args, args)).keys()
-                # has_defaults = spec.defaults or spec.kwonlydefaults
-                # is_pos_or_named_passed_as_kwarg = \
-                #     name in etc.list_intersection(spec.args, list(kw.keys()))
-                return str(value) if is_pos_or_named_passed_as_arg \
-                    else f'{_humanify(name)} {value}'
-
-            params = list(map(described, list(params_dict.items())))
+            params = list(map(lambda item: (item[0], _format_param(item[1])), params_dict.items()))
 
             def derepresent(string):
                 return string[1:-1]
-
             params_string = self.params_separator.join(
-                list(map(derepresent, params)) if self.derepresent_params
-                else params
+                list(map(derepresent, [value for _, value in params])) if self.derepresent_params
+                else [value for _, value in params]
             )
             params_values = list(params_dict.values())
 
@@ -173,22 +154,16 @@ class StepContext:
                         + params_string)
 
             def context():
-
                 def is_method(fn):
                     spec = inspect.getfullargspec(fn)
                     return (args
                             and spec.args
                             and spec.args[0] in ['cls', 'self'])
 
-                maybe_module_name = \
-                    func.__module__.split('.')[-1] if not is_method(func) \
-                        else None
-
+                maybe_module_name = func.__module__.split('.')[-1] if not is_method(func) else None
                 instance = args[0] if is_method(func) else None
                 instance_desc = str(instance)
-                maybe_instance_name = \
-                    instance_desc if 'at 0x' not in instance_desc \
-                        else None
+                maybe_instance_name = instance_desc if 'at 0x' not in instance_desc else None
                 class_name = instance and instance.__class__.__name__
 
                 context_name = maybe_module_name or maybe_instance_name or class_name
@@ -212,8 +187,5 @@ class StepContext:
 
             with StepContext(translated_name, params_dict):
                 return func(*args, **kw)
-
-            # with StepContext(self.title.format(*args, **params), params):
-            #     return func(*args, **kw)
 
         return impl
