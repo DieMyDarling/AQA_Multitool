@@ -1,12 +1,12 @@
 import time
+
 from selene.api import *
 from selenium.webdriver import Keys
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
-from assist.helpers import tool
-# from assist.allure.report import step
-from assist.allure.custom_step import step
 
+from assist.allure.custom_step import step
+from assist.helpers import tool
 
 
 class BasePage:
@@ -59,7 +59,7 @@ class BasePage:
     @step('Проверить текущий URL')
     def check_url(url: str):
         current_url = browser.driver.current_url
-        assert current_url == url, f'{current_url} does not match {url}'
+        assert current_url == url, f'Полученный URL {current_url} не соответствует ожидаемому {url}'
 
     @staticmethod
     @step('Проверить, что элемент отображается')
@@ -159,7 +159,7 @@ class BasePage:
     @staticmethod
     @step('Передвинуть слайдер')
     def move_slider(element, name: str):
-        driver = browser.driver()  # Используем текущий драйвер из Selene
+        driver = browser.driver()
         try:
             if isinstance(element, str):
                 element = driver.find_element(By.XPATH, element)
