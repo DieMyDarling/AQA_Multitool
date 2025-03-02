@@ -1,3 +1,5 @@
 {
-    "web_url": "https://www.saucedemo.com/"
+    "web_url": "https://www.saucedemo.com/",
+    "api_key": "secret_api_key",
+    "api_url": "localhost:5000"
 }

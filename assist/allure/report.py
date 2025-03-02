@@ -11,6 +11,7 @@ from selene.core.entity import Element
 def _humanify(string_with_underscores, /):
     return re.sub(r'_+', ' ', string_with_underscores).strip()
 
+
 def _fn_params_to_ordered_dict(func, *args, **kwargs):
     spec = inspect.getfullargspec(func)
 
@@ -25,7 +26,8 @@ def _fn_params_to_ordered_dict(func, *args, **kwargs):
 
     varargs = args[len(spec.args):]
     varargs_dict = {spec.varargs: varargs} if (spec.varargs and varargs) else {}
-    pos_or_named_or_vargs_ordered_names = pos_or_named_ordered_names + [spec.varargs] if varargs_dict else pos_or_named_ordered_names
+    pos_or_named_or_vargs_ordered_names = pos_or_named_ordered_names + [
+        spec.varargs] if varargs_dict else pos_or_named_ordered_names
 
     pos_or_named_or_vargs_or_named_only_ordered_names = (
             pos_or_named_or_vargs_ordered_names
@@ -47,10 +49,12 @@ def _fn_params_to_ordered_dict(func, *args, **kwargs):
 
     return collections.OrderedDict(sorted_items)
 
+
 def _format_param(value):
     if isinstance(value, Element):
         return f'локатор: {value._locator}'
     return represent(value)
+
 
 def step(
         title_or_callable=None,
@@ -83,6 +87,7 @@ def step(
             display_context=display_context,
             translations=translations,
         )
+
 
 class StepContext:
     def __init__(
@@ -132,6 +137,7 @@ class StepContext:
 
             def derepresent(string):
                 return string[1:-1]
+
             params_string = self.params_separator.join(
                 list(map(derepresent, [value for _, value in params])) if self.derepresent_params
                 else [value for _, value in params]

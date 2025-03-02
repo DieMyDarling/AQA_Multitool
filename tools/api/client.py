@@ -10,7 +10,7 @@ from environments import env
 
 class APIClient:
 
-    def __init__(self, api_url=env.api_portal_url, api_key=env.api_key, bearer=None):
+    def __init__(self, api_url=env.api_url, api_key=env.api_key, bearer=None):
         """
         Инициализация клиента API.
 
@@ -124,6 +124,28 @@ class APIClient:
             except requests.exceptions.RequestException as e:
                 logging.error(f"Ошибка при выполнении PATCH-запроса: {e}")
                 allure.attach(str(e), name="Ошибка PATCH-запроса", attachment_type=allure.attachment_type.TEXT)
+                return None
+
+    def delete(self, endpoint='', data=None):
+        """
+        Выполняет DELETE-запрос к API.
+
+        Args:
+            endpoint (str): Расширение URL для DELETE-запроса.
+            data (dict, optional): Данные запроса (если необходимы).
+
+        Returns:
+            requests.Response: Объект ответа от сервера или None в случае ошибки.
+        """
+        url = self.api_url + endpoint
+        with allure.step(f"Выполнение DELETE-запроса. URL: {url}"):
+            try:
+                response = self.session.delete(url, json=data, headers=self.headers)
+                response.raise_for_status()
+                return response
+            except requests.exceptions.RequestException as e:
+                logging.error(f"Ошибка при выполнении DELETE-запроса: {e}")
+                allure.attach(str(e), name="Ошибка DELETE-запроса", attachment_type=allure.attachment_type.TEXT)
                 return None
 
     def _send(self, url, data, headers, cookies, method, params=None):
@@ -270,7 +292,6 @@ class APIClientAsync:
 
     async def delete(self, endpoint=''):
         return await self._request('DELETE', endpoint)
-
 
 """
 # Пример использования синхронного клиента:

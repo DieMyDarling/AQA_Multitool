@@ -1,0 +1,23 @@
+[
+  {
+    "Animal": "Cat",
+    "Name": "Murka",
+    "Age": 3,
+    "EyeColor": "green",
+    "HasKids": false
+  },
+  {
+    "Animal": "Dog",
+    "Name": "Barbos",
+    "Age": 5,
+    "EyeColor": "brown",
+    "HasKids": true
+  },
+  {
+    "Animal": "Parrot",
+    "Name": "Kesha",
+    "Age": 2,
+    "EyeColor": "blue",
+    "HasKids": false
+  }
+]

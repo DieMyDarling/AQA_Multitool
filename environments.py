@@ -1,11 +1,13 @@
 import json
+import sys
 
 from pydantic import BaseModel
-import sys
 
 
 class Environments(BaseModel):
     web_url: str
+    api_key: str
+    api_url: str
 
 
 def open_config():
@@ -25,7 +27,7 @@ def open_config():
         command_line_env = 'env_main'
 
     # Сформировать путь к файлу конфигурации, используя значение command_line_env.
-    config_path = f'config/{command_line_env}.json'
+    config_path = f'./config/{command_line_env}.json'
 
     # Открыть и загрузить JSON-файл конфигурации.
     with open(config_path) as json_file:
@@ -42,6 +44,8 @@ environment = Environments(**data)
 
 class ENV:
     web_url = environment.web_url
+    api_key = environment.api_key
+    api_url = environment.api_portal_url
 
 
 env = ENV()
